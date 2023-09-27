@@ -58,7 +58,8 @@ namespace hhnl.ProcessIsolation.Windows
             bool attachToCurrentProcess = true,
             IEnumerable<FileAccess>? fileAccess = null,
             bool makeApplicationDirectoryReadable = true,
-            string? workingDirectory = null)
+            string? workingDirectory = null,
+            bool lowPrivAppContainer = false)
         {
             string applicationName = Path.GetFileNameWithoutExtension(path);
 
@@ -67,15 +68,40 @@ namespace hhnl.ProcessIsolation.Windows
                 $"{applicationName} Container ({isolationIdentifier})",
                 $"Application container for {applicationName}");
 
+
             var config = new Win32ProcessConfig
             {
                 ApplicationName = path,
                 CommandLine = commandLineArguments is not null ? string.Join(" ", commandLineArguments) : string.Empty,
-                ChildProcessMitigations = ChildProcessMitigationFlags.Restricted,
+                //ChildProcessMitigations = ChildProcessMitigationFlags.Restricted,
+                ChildProcessMitigations = ChildProcessMitigationFlags.None,
                 AppContainerSid = container.Sid,
                 TerminateOnDispose = true,
                 CurrentDirectory = workingDirectory is null ? null : Path.GetFullPath(workingDirectory),
+                LowPrivilegeAppContainer = lowPrivAppContainer,               
+                
             };
+
+            //hack our capability list here
+            config.AddNamedCapability("internetClient");
+            config.AddNamedCapability("registryRead");
+            config.AddNamedCapability("lpacAppExperience");
+            config.AddNamedCapability("lpacClipboard");
+            config.AddNamedCapability("lpacCom");
+            config.AddNamedCapability("lpacCryptoServices");
+            config.AddNamedCapability("lpacEnterprisePolicyChangeNotifications");
+            config.AddNamedCapability("lpacIME");
+            config.AddNamedCapability("lpacIdentityServices");
+            config.AddNamedCapability("lpacInstrumentation");
+            config.AddNamedCapability("lpacMedia");
+            config.AddNamedCapability("lpacPackageManagerOperation");
+            config.AddNamedCapability("lpacPayments");
+            config.AddNamedCapability("lpacPnPNotifications");
+            config.AddNamedCapability("lpacPrinting");
+            config.AddNamedCapability("lpacServicesManagement");
+            config.AddNamedCapability("lpacSessionManagement");
+            config.AddNamedCapability("lpacWebPlatform");           
+            
 
             // Allow the process to access it's own files.
             if (makeApplicationDirectoryReadable)
@@ -105,7 +131,7 @@ namespace hhnl.ProcessIsolation.Windows
                 config.AddCapability(KnownSids.CapabilityPrivateNetworkClientServer);
 
             if ((networkPermissions & NetworkPermissions.Internet) != 0)
-                config.AddCapability(KnownSids.CapabilityInternetClient);
+                config.AddCapability(KnownSids.CapabilityInternetClient);            
 
             var process = Win32Process.CreateProcess(config);
 
@@ -140,7 +166,7 @@ namespace hhnl.ProcessIsolation.Windows
                 accessRights,
                 container.Sid);
 
-            securityInfo.AddAce(ace);
+            securityInfo.AddAccessAce(ace);
 
             Win32Security.SetSecurityInfo(
                 folder,

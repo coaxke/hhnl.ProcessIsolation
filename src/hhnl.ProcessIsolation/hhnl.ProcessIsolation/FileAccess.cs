@@ -38,7 +38,9 @@ namespace hhnl.ProcessIsolation
         public enum Right : uint
         {
             Read = 2147483648,
-            Write = 1073741824
+            Write = 1073741824,
+            Execute = 131072,
+            All = 268435456
         }
     }
 }

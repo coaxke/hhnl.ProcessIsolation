@@ -41,6 +41,7 @@ namespace hhnl.ProcessIsolation
             bool attachToCurrentProcess = true,
             IEnumerable<FileAccess>? fileAccess = null,
             bool makeApplicationDirectoryReadable = true,
-            string? workingDirectory = null);
+            string? workingDirectory = null,
+            bool lowPrivAppContainer = false);
     }
 }
